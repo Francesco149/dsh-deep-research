@@ -129,6 +129,36 @@ All of them mode 600. Make sure the dsh process actually gets them: the generate
    whether the lanes were kept and how busy each server was. Tune lanes and the compaction ratio from that.
 5. Laptop, if set up: run `laptop-mcp/tests/smoke_mcp.py` first, then one run with a laptop pass.
 
+## Optional, laptop only: an agent identity with its own site accounts
+
+Skip this unless the user asks for it. The laptop works without it: login walls are escalated to the user and the
+research carries on with other sources. With it, the laptop reader can sign up for and sign in to forums,
+databases and members-only pages a run needs. Explain the trade-off before setting it up. A web page can carry
+instructions aimed at the agent, and the agent can read the identity's mailbox. So the identity must be a
+**throwaway** that holds nothing of the user's.
+
+How it works (details in `laptop-mcp/DESIGN.md` "Accounts"):
+- The identity is a throwaway Gmail signed into the agent Chrome on the laptop, plus its own account on a
+  Bitwarden-compatible vault (a self-hosted Vaultwarden, or bitwarden.com). The MCP server uses that vault through
+  the `bw` CLI, with CLI state kept apart from any other `bw` login on the host.
+- `account_create` has the vault generate the password and save the item before the form is filled.
+  `account_fill` types it, at a person's pace, only into a password field on the account's own registrable
+  domain. `browser_type`/`type_text` refuse password fields, and deskd logs only the length. **No password ever
+  reaches a model, a run record or a log.**
+- Guards: one account per site. The identity's Google account is decline-only on its security pages: no passkey,
+  and no change to its password, recovery or 2-step settings. Phone numbers, payment and ID documents are always
+  escalated to the user. Agents never make a second account to get around a limit, ban or trial.
+
+Setup, with the user doing the parts that need a person:
+1. The user creates the throwaway Gmail and signs it into the agent Chrome (`bin/cu live`, Take control). They
+   also create the vault account for it.
+2. Install the Bitwarden CLI (`bw`) on the machine that runs the MCP server.
+3. Write `~/.config/computer-use/identity.env` there (mode 600): `AGENT_EMAIL`, `AGENT_NAME`, `BW_SERVER`,
+   `BW_EMAIL`, `BW_PASSWORD`. The user types or pastes the vault password into the file themselves. Never echo
+   it, log it or put it anywhere else. For an MCP server run as a service, point `CU_IDENTITY` at the file.
+4. Restart the MCP server, then run `laptop-mcp/tests/accounts_mcp.py`. It checks the guards and creates nothing.
+5. Tell the user that every account the agents create is in that vault, where they can review or delete it.
+
 ## 7. Hand over
 
 Tell the user: what was installed and where, how to start and stop it, the layout in one line, what you changed by

@@ -92,7 +92,8 @@ them, `account_fill` types them only into a password field on the account's own 
 refuses password fields. The Google account itself is protected: no passkeys, and no changes to its password or
 recovery settings. Phone numbers, payment and ID are always escalated to you.
 
-Use a throwaway identity only. A page can carry instructions aimed at the agent, and the identity's mailbox is
+Optional, and for people who want to go that far: AGENTS.md "Optional, laptop only: an agent identity" walks
+the installing agent through it. Use a throwaway identity only. A page can carry instructions aimed at the agent, and the identity's mailbox is
 readable by it. Do not make second accounts to get around a site's limits.
 
 ## Operating it
