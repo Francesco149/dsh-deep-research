@@ -1,0 +1,17 @@
+{
+  "_comment": "One box: llama-server with --cache-ram (idle conversations kept in RAM) and --parallel 1. Two lanes; the orchestrator shares it and is idle while it waits.",
+  "profile": "research",
+  "servers": [
+    {
+      "name": "local",
+      "baseURL": "http://127.0.0.1:8080/v1",
+      "model": "qwen3.8-flash-next",
+      "contextWindow": 131072,
+      "lanes": 2,
+      "vision": false,
+      "thinking": "qwen-chat-template",
+      "note": "The only server: every subagent and your own conversation take turns on it"
+    }
+  ],
+  "laptop": { "enabled": false }
+}

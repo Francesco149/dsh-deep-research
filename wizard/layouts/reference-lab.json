@@ -1,0 +1,42 @@
+{
+  "_comment": "The author's working setup (docs/reference-lab/README.md): two consumer boxes, one model, both with a RAM conversation cache. Addresses are placeholders.",
+  "profile": "research",
+  "dsh_home": "~/.dsh",
+  "dsh_install": "~/.local/share/dsh",
+  "port": 3080,
+  "search": "helper",
+  "worker_compaction_ratio": 0.2,
+  "servers": [
+    {
+      "name": "lame",
+      "displayName": "Qwen 3.8 Flash-Next IQ3_KS (lame, RX 7800 XT)",
+      "baseURL": "http://192.168.1.56:8080/v1",
+      "model": "qwen3.8-flash-next-iq3ks",
+      "contextWindow": 262144,
+      "maxTokens": 16384,
+      "lanes": 2,
+      "vision": true,
+      "thinking": "qwen-chat-template",
+      "primary": true,
+      "note": "The faster server (about 70 tokens/s, long context). It keeps idle conversations in RAM, so two subagents can take turns on it cheaply"
+    },
+    {
+      "name": "ampere",
+      "displayName": "Qwen 3.8 Flash-Next IQ3_S (ampere, RTX 3080)",
+      "baseURL": "http://192.168.1.240:8080/v1",
+      "model": "qwen3.8-flash-next-iq3_s",
+      "contextWindow": 229376,
+      "maxTokens": 16384,
+      "lanes": 2,
+      "vision": true,
+      "thinking": "qwen-chat-template",
+      "note": "A little slower (about 55 tokens/s). It also keeps idle conversations in RAM (about three of 32K), so two subagents can take turns on it too"
+    }
+  ],
+  "laptop": {
+    "enabled": true,
+    "transport": "http",
+    "url": "https://laptop.example.lan/mcp",
+    "tokenEnv": "CU_TOKEN"
+  }
+}

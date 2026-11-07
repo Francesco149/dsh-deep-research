@@ -1,0 +1,46 @@
+{
+  "_comment": "Three boxes of different sizes, plus a cloud route as a fourth lane group. Total lanes must stay <= 8 (dsh's live-subagent cap). See docs/LAYOUT.md.",
+  "profile": "research",
+  "worker_compaction_ratio": 0.3,
+  "servers": [
+    {
+      "name": "big",
+      "baseURL": "http://192.168.1.10:8080/v1",
+      "model": "qwen3.8-flash-next",
+      "contextWindow": 262144,
+      "lanes": 2,
+      "vision": true,
+      "primary": true,
+      "note": "The fastest box; critic and writer run here"
+    },
+    {
+      "name": "mid",
+      "baseURL": "http://192.168.1.11:8080/v1",
+      "model": "qwen3.8-flash-next",
+      "contextWindow": 131072,
+      "lanes": 2,
+      "vision": false,
+      "note": "No vision: never give it a task that needs frames or pictures"
+    },
+    {
+      "name": "small",
+      "baseURL": "http://192.168.1.12:8080/v1",
+      "model": "qwen3.8-27b",
+      "contextWindow": 65536,
+      "lanes": 1,
+      "vision": false,
+      "note": "A smaller model with a short context and no conversation cache: give it fact checks, not broad research"
+    },
+    {
+      "name": "cloud",
+      "baseURL": "https://openrouter.ai/api/v1",
+      "model": "qwen/qwen3.8-flash-next",
+      "apiKeyEnv": "OPENROUTER_API_KEY",
+      "contextWindow": 262144,
+      "lanes": 3,
+      "thinking": "none",
+      "note": "A paid cloud route: fast and parallel, but every token costs money; use it when the queue is long"
+    }
+  ],
+  "laptop": { "enabled": false }
+}
