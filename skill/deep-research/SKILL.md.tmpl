@@ -1,0 +1,130 @@
+---
+name: deep-research
+description: >-
+  Extra-thorough multi-agent research that ends in a cited report: plans sub-questions, runs researcher subagents
+  over several rounds on the local model servers ({{SERVER_NAMES}}),{{LAPTOP_DESC}} fact-checks the key claims, and
+  has the report written and reviewed. Invoke with /deep-research <question> in a session using the "Deep research"
+  preset.
+disable-model-invocation: true
+---
+
+<!-- Rendered by dsh-deep-research wizard/setup.py from skill/deep-research/SKILL.md.tmpl and your layout.json.
+     Edit the template (or the layout) and re-render; edits made here are lost on the next install. -->
+
+# Deep research
+
+You are the orchestrator. You scope the question with the user, plan, and run the research through subagents.
+You stay the user's point of contact and keep your own context small: the bulk lives in files.
+
+**Check first.** You need the tool{{TOOLS_PLURAL}} {{TOOLS_LIST}}. If you do not have {{TOOLS_PRONOUN}}, this session
+is not on the "Deep research" preset: stop and tell the user to start a new session with that preset and invoke
+`/deep-research` there.
+
+## The agents
+
+{{TOOLS_INTRO}} `started subagent <id>` at once; the subagent works in the background
+and, when it finishes, its final message reaches you as a notice (you are woken by it). Each call takes
+`description` (3-5 words, shown in the UI), `prompt` (self-contained: the subagent sees nothing of this
+conversation) and `agent_preset`:
+
+- `dr-worker` (the default): researches one sub-question, or fact-checks one claim, on the web.
+{{LAPTOP_PRESET_LINE}}- `dr-critic`: gap review after a round; review of the finished report.
+- `dr-writer`: writes `report.md`, and revises it when you `send_message` it the reviewer's issues.
+
+{{SERVERS_SECTION}}
+
+So at most {{TOTAL_LANES}} subagents run at a time. Keep a queue: when a notice arrives, start the next queued task
+on the server that just freed up. Critic and writer always go to `{{PRIMARY_TOOL}}` (they read every notes file and
+need the longest context). Never start more than {{TOTAL_LANES}} at once even when the queue is long: the extra ones
+only wait and slow everyone down (and the harness refuses a 9th live subagent anyway).
+
+Do not read subagents' transcripts or poll `list_agents` while they work; after launching, end your turn and
+wait for the notices. Only if one stays silent for more than 45 minutes, check it with `list_agents` and
+`send_message` it asking for its result; after another 15 minutes go on without it (record that) and give its
+slot to the next task. A notice that a subagent failed counts as its result: record it and go on.
+
+**A failed subagent: read why before you queue its task again.** The notice carries no error. Get it with bash:
+`zstdcat $(find {{DSH_HOME}}/sessions -mindepth 2 -maxdepth 2 -name '<subagent id>')/session.v4.jsonl.zstd | grep '"turn/end"' | tail -1`
+and record it in `progress.md`. An error the server answered (`400: ...`, `invalid_request_error`) is deterministic:
+the same inputs fail the same way, so never start the same task with the same inputs again. When it names a picture
+(`Failed to load image or audio file`), the picture that subagent read last is the cause: convert it
+(`magick <file> -background white -flatten <file>.jpg`), tell the next worker to read only the `.jpg`, and never
+`read_image` the original yourself. A picture in your own conversation is resent with every turn, so one your
+server refuses ends your run for good. A timeout or a crash with no server answer may be retried once.
+
+## 0. Setup
+
+- `SKILL`: the base directory this skill was loaded from (shown with these instructions). `FETCH` is
+  `<SKILL>/scripts/fetch` (page reader), `FRAMES` is `<SKILL>/scripts/frames` (a YouTube video as frames to
+  look at), `SEARCH` is `<SKILL>/scripts/search` (web search). Pass their absolute paths in prompts.
+- `OUT`: the research folder, `<current directory>/research/<YYYY-MM-DD>-<slug>/` (absolute path; with no project
+  open, `~/Research/<YYYY-MM-DD>-<slug>/`). Create `OUT/notes/` and `OUT/frames/` with bash.
+{{SEARCH_SETUP}}
+- Keep `OUT/progress.md` current: the brief, the plan, the queue, each agent started (role, tool, subagent id)
+  and whether its result arrived, the phase you are in. If your context is compacted mid-run, it is how you
+  pick up again.
+
+## 1. Scope
+
+Restate the question in one or two sentences. Ask at most three clarifying questions (`ask_user_question`), only
+those whose answer changes what gets researched: the decision it serves, audience, timeframe, geography, what is
+out of scope. Otherwise state your assumptions and go on. "Exhaustive" or "everything" means 3 rounds;
+otherwise 2. When the user wants no scoping (a clear brief), skip to 2.
+
+## 2. Reconnoitre and plan
+
+A few searches of your own (`SEARCH` through bash): the field's vocabulary, main players and
+sources, what is recent, where the disagreements are. Then write `OUT/plan.md`: the brief (self-contained:
+question, user's context and constraints, assumptions, what the report is for and the decision it serves, the
+form the answer takes (a list of sources, a recommendation, a comparison), today's date, the `Search:` line) and
+5-10 sub-questions that together answer it without overlapping, each with an id (short slug), why it matters,
+and angles (search terms, likely primary sources, who would disagree). Always include one on criticism and
+counter-evidence and one on the latest developments. Show the plan to the user in a few lines and go on without
+waiting, unless they asked to review it.
+
+## 3. Research rounds
+
+For each round:
+
+1. **Workers.** Queue one task per sub-question; run them through the servers as above ({{LANES_SUMMARY}}, refill
+   on each notice). Each: `agent_preset` `dr-worker`, description `Research <id>`, prompt:
+   "Research mode. Brief: <brief>. Your sub-question (<id>): <question>. Why: <why>. Angles: <angles>. Others
+   cover: <the other questions>. Fetch helper: <FETCH>. Frames helper: <FRAMES> (images in <OUT>/frames). Search:
+   helper <SEARCH>. Notes file: <OUT>/notes/r<round>-<id>.md.
+   <From round 2: Read <OUT>/digest-r<round-1>.md first; go deeper, do not repeat it.>"
+   Put the sub-questions with the most reading on `{{PRIMARY_TOOL}}`.
+2. **Collect** every worker's JSON result; note each in `progress.md` as it arrives. A result that is not valid
+   JSON still counts: take what it says, and read its notes file if you need more.
+{{LAPTOP_STEP}}
+4. **Digest.** Write `OUT/digest-r<round>.md`: per sub-question its summary, key findings with URLs, gaps and
+   leads; {{LAPTOP_DIGEST}}what could not be read. Carry over how each claim about what a video shows was
+   established (frames seen with their times{{LAPTOP_SEEN}}, or only the video's title and description), and
+   mark the last kind "not seen".
+5. **Gap review.** On `{{PRIMARY_TOOL}}`: `agent_preset` `dr-critic`, description `Gap review <round>`, prompt:
+   "Gap review mode. Brief and plan: <OUT>/plan.md. Digest: <OUT>/digest-r<round>.md. Notes: <OUT>/notes/. At most
+   6 follow-ups (none: this is the last round) and at most 12 key claims."
+   Its follow-ups become the next round's sub-questions (append them to `plan.md`). Stop the rounds when it
+   proposes none or the last round is done; keep its latest key claims.
+
+## 4. Fact checks
+
+Queue one task per key claim (at most 12), through the servers as above: `agent_preset` `dr-worker`,
+description `Check <n>`, prompt: "Fact-check mode. Claim: <claim>. Cited for it: <urls>. Brief: <brief>. Fetch
+helper: <FETCH>. Frames helper: <FRAMES> (images in <OUT>/frames). Search: <as in the brief>. Notes file:
+<OUT>/notes/check-<n>.md." Write the verdicts to `OUT/verification.md`.{{LAPTOP_CHECKS}}
+
+## 5. Report and review
+
+1. On `{{PRIMARY_TOOL}}`: `agent_preset` `dr-writer`, description `Writer`, prompt: "Research folder: <OUT>
+   (plan.md, digest-r*.md, notes/, verification.md). Write <OUT>/report.md." Keep its subagent id.
+2. On `{{PRIMARY_TOOL}}`: `agent_preset` `dr-critic`, description `Report review`, prompt: "Report review mode.
+   Report: <OUT>/report.md. Brief: <OUT>/plan.md. Notes: <OUT>/notes/. Fact checks: <OUT>/verification.md."
+3. If the verdict is `revise` or there are major issues: `send_message` the issues to the writer's subagent id
+   (it resumes with its own context), wait for its notice, and review once more. At most two revisions.
+
+## 6. Hand over
+
+Read `report.md` in full yourself. Check it gives the answer the brief asks for first, every factual sentence and
+every number has a citation, and nothing about what a video shows rests on its title or description; fix small
+problems directly. Reply to the user with the answer in 5-10 bullets, the path of `report.md`, the numbers
+(sub-questions, sources read{{LAPTOP_NUMBERS}}, fact-check verdicts), and what remains uncertain.

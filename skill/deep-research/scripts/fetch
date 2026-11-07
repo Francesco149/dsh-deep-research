@@ -1,0 +1,5 @@
+#!/bin/sh
+# fetch URL [options]: fetch_page.py through uv (inline script metadata; first run builds a cached env).
+# Needs: uv on PATH. See fetch_page.py for the options and exit codes (0 ok, 2 error, 3 BLOCKED).
+here=$(cd "$(dirname "$0")" && pwd)
+exec uv run --quiet --no-project --script "$here/fetch_page.py" "$@"

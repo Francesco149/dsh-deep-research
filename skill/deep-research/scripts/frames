@@ -1,0 +1,4 @@
+#!/bin/sh
+# frames sheet|strip ...: frames.py through uv (inline script metadata). Needs uv, and deno for YouTube.
+here=$(cd "$(dirname "$0")" && pwd)
+exec uv run --quiet --no-project --script "$here/frames.py" "$@"

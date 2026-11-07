@@ -1,0 +1,6 @@
+#!/bin/sh
+# search QUERY [--max N] [--engine auto|all|exa|langsearch|ddg|free] [--region R] [--timelimit d|w|m|y]:
+# web search for the research agents, Exa -> DuckDuckGo -> Vertex (Gemini + Google Search) -> other free engines -> LangSearch (search.py).
+# Keys from the environment (EXA_API_KEY, LANGSEARCH_API_KEY, DEEPSEEK_API_KEY; Vertex: gcloud ADC; the dsh service loads ~/.config/dsh/search.env). Needs uv.
+here=$(cd "$(dirname "$0")" && pwd)
+exec uv run --quiet --no-project --script "$here/search.py" "$@"
