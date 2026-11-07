@@ -1,0 +1,9 @@
+[project]
+name = "computer-use-laptop"
+version = "0.1.0"
+description = "deskd: the desktop daemon in the agent account's session on the laptop"
+requires-python = ">=3.13,<3.14"
+dependencies = ["mss>=10.2", "pillow>=11"]
+
+[tool.uv]
+package = false

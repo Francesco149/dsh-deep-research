@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+# The computer-use MCP server over stdio (cu/mcp_server.py). Set CU_OWNER and CU_PURPOSE so the
+# lease and the run record say who is driving.
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+PYTHONPATH="$repo${PYTHONPATH:+:$PYTHONPATH}" exec uv run --quiet --project "$repo" python -m cu.mcp_server "$@"

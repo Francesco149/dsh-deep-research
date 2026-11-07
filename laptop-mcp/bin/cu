@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+# Operate the computer-use laptop from the machine that drives it (cu/cli.py).
+repo="$(cd "$(dirname "$(readlink -f "$0")")/.." && pwd)"
+PYTHONPATH="$repo${PYTHONPATH:+:$PYTHONPATH}" exec uv run --quiet --project "$repo" python -m cu.cli "$@"
