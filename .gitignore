@@ -1,0 +1,11 @@
+# wizard output and local layouts (they hold your addresses)
+.render/
+/layout.json
+LOCAL-CHANGES.md
+__pycache__/
+*.pyc
+.venv/
+# laptop MCP runtime state: runs, screenshots, queue, client token hashes, escalations
+laptop-mcp/state/
+laptop-mcp/bootstrap/reports.jsonl
+laptop-mcp/uv.lock
